@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll Cockpit — Chasm Opportunities</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        :root {
+            --teal:          #00c5be;
+            --teal-dim:      rgba(0,197,190,0.12);
+            --teal-glow:     rgba(0,197,190,0.25);
+            --bg:            #080f0e;
+            --bg-2:          #0d1a18;
+            --bg-3:          #112320;
+            --border:        rgba(0,197,190,0.1);
+            --border-bright: rgba(0,197,190,0.28);
+            --text-primary:  #e2f0ef;
+            --text-secondary:#7aa8a3;
+            --text-muted:    #3d6460;
+            --amber:         #f5a623;
+            --amber-dim:     rgba(245,166,35,0.13);
+            --emerald:       #0fd9a0;
+            --emerald-dim:   rgba(15,217,160,0.12);
+            --red:           #ff6b6b;
+            --red-dim:       rgba(255,107,107,0.12);
+            --purple:        #c084fc;
+            --purple-dim:    rgba(192,132,252,0.12);
+            --header-bg:     rgba(8,15,14,0.88);
+            --dot-color:     rgba(0,197,190,0.09);
+        }
+
+        /* ── LIGHT MODE ── */
+        [data-theme="light"] {
+            --bg:            #f0f7f6;
+            --bg-2:          #ffffff;
+            --bg-3:          #e8f3f2;
+            --border:        rgba(0,160,155,0.14);
+            --border-bright: rgba(0,160,155,0.35);
+            --text-primary:  #0e2422;
+            --text-secondary:#2d6b65;
+            --text-muted:    #7aadaa;
+            --amber-dim:     rgba(180,100,0,0.09);
+            --emerald-dim:   rgba(0,140,90,0.09);
+            --red-dim:       rgba(200,50,50,0.09);
+            --purple-dim:    rgba(130,60,200,0.09);
+            --teal-dim:      rgba(0,160,155,0.1);
+            --header-bg:     rgba(240,247,246,0.92);
+            --dot-color:     rgba(0,160,155,0.07);
+        }
+        [data-theme="light"] .stat-card::before {
+            background: linear-gradient(135deg,rgba(0,160,155,0.04) 0%,transparent 60%);
+        }
+        [data-theme="light"] body::after {
+            background: radial-gradient(ellipse, rgba(0,197,190,0.06) 0%, transparent 70%);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Syne', sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Dot-grid background */
+        body::before {
+            content: '';
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+            background-size: 28px 28px;
+        }
+
+        /* Top ambient glow */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -180px; left: 50%; transform: translateX(-50%);
+            width: 700px; height: 380px;
+            background: radial-gradient(ellipse, rgba(0,197,190,0.07) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        /* ── LOADER ── */
+        #loader {
+            position: fixed; inset: 0; background: var(--bg);
+            z-index: 10000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 20px;
+        }
+        .loader-ring {
+            width: 44px; height: 44px;
+            border: 2px solid var(--border); border-top-color: var(--teal);
+            border-radius: 50%; animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text {
+            font-family: 'DM Mono', monospace; font-size: 9px;
+            letter-spacing: 0.4em; color: var(--teal); text-transform: uppercase;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--header-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            transition: background 0.3s;
+        }
+        .header-inner {
+            max-width: 1440px; margin: 0 auto; padding: 0 28px;
+            height: 68px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo-mark {
+            width: 36px; height: 36px; border-radius: 10px;
+            background: var(--teal-dim); border: 1px solid var(--border-bright);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .header-brand {
+            font-size: 15px; font-weight: 700; letter-spacing: 0.04em;
+            color: var(--text-primary); line-height: 1;
+        }
+        .header-brand span { color: var(--text-muted); margin: 0 6px; }
+        .header-sub {
+            font-family: 'DM Mono', monospace; font-size: 11px;
+            color: var(--teal); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 5px;
+        }
+        .header-nav { display: flex; align-items: center; gap: 8px; }
+        .nav-btn {
+            width: 34px; height: 34px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg-2);
+            color: var(--text-secondary); display: flex; align-items: center;
+            justify-content: center; cursor: pointer; transition: all 0.2s ease;
+        }
+        .nav-btn:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+        .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        .period-badge {
+            font-family: 'DM Mono', monospace; font-size: 12px;
+            color: var(--text-secondary); padding: 7px 16px;
+            border: 1px solid var(--border); border-radius: 6px;
+            background: var(--bg-2); min-width: 140px; text-align: center;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        /* Theme toggle */
+        .theme-btn {
+            width: 34px; height: 34px; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg-2);
+            color: var(--text-secondary); display: flex; align-items: center;
+            justify-content: center; cursor: pointer; transition: all 0.2s ease;
+        }
+        .theme-btn:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-dim); }
+
+        /* ── MAIN ── */
+        main {
+            position: relative; z-index: 1;
+            max-width: 1440px; margin: 0 auto; padding: 40px 28px 80px;
+        }
+
+        /* ── STAT CARDS ── */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(4,1fr);
+            gap: 14px; margin-bottom: 44px;
+        }
+        .stat-card {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 18px; padding: 22px; position: relative;
+            overflow: hidden; cursor: default;
+            transition: border-color 0.3s, transform 0.35s;
+            animation: cardIn 0.55s ease both;
+        }
+        .stat-card:nth-child(1) { animation-delay: 0.05s; }
+        .stat-card:nth-child(2) { animation-delay: 0.1s; }
+        .stat-card:nth-child(3) { animation-delay: 0.15s; }
+        .stat-card:nth-child(4) { animation-delay: 0.2s; }
+        @keyframes cardIn {
+            from { opacity:0; transform:translateY(14px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .stat-card::before {
+            content:''; position:absolute; inset:0;
+            background:linear-gradient(135deg,rgba(0,197,190,0.035) 0%,transparent 60%);
+            pointer-events:none;
+        }
+        .stat-card:hover { border-color: var(--border-bright); transform: translateY(-3px); }
+
+        .stat-label {
+            font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.2em;
+            text-transform:uppercase; color:var(--text-muted); margin-bottom:14px;
+            display:flex; align-items:center; justify-content:space-between;
+        }
+        .stat-icon {
+            width:28px; height:28px; border-radius:7px;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .stat-value {
+            font-family:'DM Mono',monospace; font-size:34px; font-weight:500;
+            color:var(--text-primary); letter-spacing:-0.03em; line-height:1;
+        }
+        .stat-value.amber { color: var(--amber); }
+        .stat-value.name-val {
+            font-family:'Syne',sans-serif; font-size:22px;
+            font-weight:700; letter-spacing:-0.01em;
+        }
+        .stat-meta {
+            font-family:'DM Mono',monospace; font-size:11px;
+            color:var(--text-muted); margin-top:12px; display:flex; align-items:center; gap:4px;
+        }
+
+        /* Outstanding pulse */
+        .card-outstanding-active {
+            border-color: rgba(245,166,35,0.22) !important;
+            animation: cardIn 0.55s ease 0.15s both, amberPulse 2.8s ease-in-out 0.7s infinite;
+        }
+        @keyframes amberPulse {
+            0%,100% { box-shadow:0 0 0 0 rgba(245,166,35,0); }
+            50%      { box-shadow:0 0 22px 4px rgba(245,166,35,0.1); }
+        }
+
+        /* Trend chip */
+        .trend-chip {
+            display:inline-flex; align-items:center; gap:4px;
+            font-family:'DM Mono',monospace; font-size:11px; font-weight:500;
+        }
+
+        /* ── SECTION HEADER ── */
+        .section-header {
+            display:flex; align-items:center; gap:10px; margin-bottom:18px;
+        }
+        .section-label {
+            font-family:'DM Mono',monospace; font-size:10px;
+            letter-spacing:0.25em; text-transform:uppercase; color:var(--text-muted);
+            white-space:nowrap;
+        }
+        .section-line { flex:1; height:1px; background:var(--border); }
+
+        /* ── DESKTOP TABLE ── */
+        .table-wrapper { overflow-x: auto; }
+        table.payroll-table {
+            width:100%; border-collapse:separate; border-spacing:0 5px;
+        }
+        .payroll-table thead th {
+            font-family:'DM Mono',monospace; font-size:10px; letter-spacing:0.18em;
+            text-transform:uppercase; color:var(--text-muted);
+            padding:8px 16px; text-align:left; font-weight:400;
+        }
+        .payroll-table thead th.center { text-align:center; }
+        .payroll-table thead th.right  { text-align:right; }
+
+        .payroll-table tbody tr {
+            animation: rowIn 0.35s ease both;
+        }
+        @keyframes rowIn {
+            from { opacity:0; transform:translateX(-6px); }
+            to   { opacity:1; transform:translateX(0); }
+        }
+        .payroll-table tbody td {
+            background:var(--bg-2); padding:16px;
+            vertical-align:middle; transition:background 0.2s;
+        }
+        .payroll-table tbody tr:hover td { background:var(--bg-3); }
+        .payroll-table tbody td:first-child { border-radius:12px 0 0 12px; padding-left:20px; }
+        .payroll-table tbody td:last-child  { border-radius:0 12px 12px 0; padding-right:20px; }
+
+        /* Employee cell */
+        .emp-avatar {
+            width:38px; height:38px; border-radius:10px;
+            background:var(--teal-dim); border:1px solid var(--border);
+            display:flex; align-items:center; justify-content:center;
+            font-family:'Syne',sans-serif; font-size:14px; font-weight:800;
+            color:var(--teal); flex-shrink:0;
+        }
+        .emp-name { font-size:15px; font-weight:700; color:var(--text-primary); letter-spacing:-0.01em; }
+        .emp-rate { font-family:'DM Mono',monospace; font-size:11px; color:var(--text-muted); margin-top:3px; }
+
+        /* Money cells */
+        .money { font-family:'DM Mono',monospace; font-size:14px; color:var(--text-secondary); text-align:center; }
+        .money.total { font-size:16px; font-weight:500; color:var(--text-primary); text-align:left; }
+
+        /* Wise tag */
+        .wise-tag {
+            display:inline-flex; align-items:center; gap:6px;
+            padding:6px 10px; border-radius:8px;
+            border:1px solid var(--border); background:var(--bg);
+            cursor:pointer; transition:all 0.2s ease; max-width:100%;
+        }
+        .wise-tag:hover { border-color:var(--teal); background:var(--teal-dim); }
+        .wise-tag-text {
+            font-family:'DM Mono',monospace; font-size:12px; color:var(--text-secondary);
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .wise-tag-icon { color:var(--text-muted); flex-shrink:0; transition:color 0.2s; }
+        .wise-tag:hover .wise-tag-icon { color:var(--teal); }
+        .wise-tag.copied { border-color:var(--emerald); background:var(--emerald-dim); }
+        .wise-tag.copied .wise-tag-text { color:var(--emerald); }
+        .wise-tag.copied .wise-tag-icon { color:var(--emerald); }
+
+        /* Status select */
+        .status-select-wrap { display:flex; justify-content:flex-end; }
+        .status-select {
+            appearance:none; -webkit-appearance:none;
+            font-family:'DM Mono',monospace; font-size:11px;
+            letter-spacing:0.08em; text-transform:uppercase; font-weight:500;
+            padding:8px 30px 8px 14px; border-radius:8px; border:1px solid transparent;
+            cursor:pointer; outline:none; transition:all 0.2s ease;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237aa8a3' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat:no-repeat; background-position:right 9px center;
+        }
+        .status-Paid     { background-color:var(--emerald-dim); color:var(--emerald); border-color:rgba(15,217,160,0.18); }
+        .status-Not-Paid { background-color:var(--red-dim);     color:var(--red);     border-color:rgba(255,107,107,0.18); }
+        .status-Hold     { background-color:var(--amber-dim);   color:var(--amber);   border-color:rgba(245,166,35,0.18); }
+        .status-select option { background:var(--bg-2); color:var(--text-primary); }
+
+        /* ── MOBILE CARDS ── */
+        .mobile-cards { display:none; flex-direction:column; gap:10px; }
+        .mobile-card {
+            background:var(--bg-2); border:1px solid var(--border);
+            border-radius:16px; padding:18px;
+            animation: cardIn 0.4s ease both;
+        }
+        .mobile-card-header {
+            display:flex; align-items:center;
+            justify-content:space-between; margin-bottom:14px; gap:8px;
+        }
+        .mobile-weeks {
+            display:grid; grid-template-columns:1fr 1fr;
+            gap:8px; margin-bottom:14px;
+        }
+        .mobile-week-cell {
+            background:var(--bg); border:1px solid var(--border);
+            border-radius:10px; padding:10px 12px;
+        }
+        .mobile-week-label {
+            font-family:'DM Mono',monospace; font-size:10px;
+            letter-spacing:0.18em; color:var(--text-muted);
+            text-transform:uppercase; margin-bottom:4px;
+        }
+        .mobile-week-val { font-family:'DM Mono',monospace; font-size:17px; color:var(--text-secondary); }
+        .mobile-total-row {
+            display:flex; align-items:center; justify-content:space-between;
+            padding-top:12px; border-top:1px solid var(--border);
+        }
+        .mobile-total-label {
+            font-family:'DM Mono',monospace; font-size:10px;
+            letter-spacing:0.18em; color:var(--text-muted); text-transform:uppercase;
+        }
+        .mobile-total-val { font-family:'DM Mono',monospace; font-size:22px; font-weight:500; color:var(--text-primary); }
+        .mobile-bottom { display:flex; align-items:center; margin-top:12px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1100px) {
+            .stats-grid { grid-template-columns: repeat(2,1fr); }
+        }
+        @media (max-width: 768px) {
+            .header-inner { padding: 0 16px; height: 60px; }
+            main { padding: 24px 16px 60px; }
+            .stats-grid { grid-template-columns: repeat(2,1fr); gap: 10px; margin-bottom: 28px; }
+            .stat-card { padding: 16px; border-radius: 14px; }
+            .stat-value { font-size: 24px; }
+            .stat-value.name-val { font-size: 16px; }
+            .table-wrapper { display: none; }
+            .mobile-cards { display: flex; }
+            .period-badge { display: none; }
+            .header-brand { font-size: 13px; }
+        }
+        @media (max-width: 420px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stat-value { font-size: 20px; }
+            .stat-value.name-val { font-size: 14px; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 2px; }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-ring"></div>
+        <p class="loader-text">Processing Financials</p>
+    </div>
+
+    <header class="header">
+        <div class="header-inner">
+            <div style="display:flex;align-items:center;gap:12px">
+                <div class="logo-mark">
+                    <i data-lucide="activity" style="width:15px;height:15px;color:var(--teal)"></i>
+                </div>
+                <div>
+                    <div class="header-brand">Chasm Opportunities <span>/</span> Payroll</div>
+                    <div id="period-display" class="header-sub"></div>
+                </div>
+            </div>
+            <div class="header-nav">
+                <button id="prevBtn" onclick="changeWeek(-1)" class="nav-btn" title="Previous cycle">
+                    <i data-lucide="chevron-left" style="width:14px;height:14px"></i>
+                </button>
+                <div id="period-badge" class="period-badge">—</div>
+                <button id="nextBtn" onclick="changeWeek(1)" class="nav-btn" title="Next cycle">
+                    <i data-lucide="chevron-right" style="width:14px;height:14px"></i>
+                </button>
+                <button id="themeBtn" onclick="toggleTheme()" class="theme-btn" title="Toggle light/dark mode">
+                    <i data-lucide="sun" style="width:14px;height:14px"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Stat Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">
+                    Cycle Total
+                    <div class="stat-icon" style="background:var(--teal-dim)">
+                        <i data-lucide="bar-chart-3" style="width:13px;height:13px;color:var(--teal)"></i>
+                    </div>
+                </div>
+                <div id="card-cycle-total" class="stat-value">$0.00</div>
+                <div id="cycle-trend" class="stat-meta"></div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    Lifetime Spend
+                    <div class="stat-icon" style="background:rgba(59,130,246,0.1)">
+                        <i data-lucide="layers" style="width:13px;height:13px;color:#60a5fa"></i>
+                    </div>
+                </div>
+                <div id="card-lifetime" class="stat-value">$0.00</div>
+                <div class="stat-meta">All periods combined</div>
+            </div>
+
+            <div id="outstanding-card" class="stat-card">
+                <div class="stat-label">
+                    Outstanding
+                    <div class="stat-icon" style="background:var(--amber-dim)">
+                        <i data-lucide="alert-circle" style="width:13px;height:13px;color:var(--amber)"></i>
+                    </div>
+                </div>
+                <div id="card-outstanding" class="stat-value amber">$0.00</div>
+                <div id="unpaid-count" class="stat-meta">
+                    <i data-lucide="clock" style="width:10px;height:10px"></i>
+                    Pending review
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">
+                    Cycle Lead
+                    <div class="stat-icon" style="background:var(--purple-dim)">
+                        <i data-lucide="award" style="width:13px;height:13px;color:var(--purple)"></i>
+                    </div>
+                </div>
+                <div id="card-top-earner" class="stat-value name-val">—</div>
+                <div id="top-earner-amt" class="stat-meta"></div>
+            </div>
+        </div>
+
+        <!-- Section Label -->
+        <div class="section-header">
+            <i data-lucide="users" style="width:11px;height:11px;color:var(--text-muted)"></i>
+            <span class="section-label">Personnel Disbursements</span>
+            <div class="section-line"></div>
+        </div>
+
+        <!-- Desktop Table -->
+        <div class="table-wrapper">
+            <table class="payroll-table">
+                <thead>
+                    <tr>
+                        <th style="width:23%">Freelancer</th>
+                        <th class="center" style="width:11%" id="h-w1">W1</th>
+                        <th class="center" style="width:11%" id="h-w2">W2</th>
+                        <th style="width:16%">Total Earned</th>
+                        <th style="width:19%">Wise Handle</th>
+                        <th class="right" style="width:20%">Payment Status</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Mobile Card List -->
+        <div id="mobile-list" class="mobile-cards"></div>
+    </main>
+
+    <script>
+        let masterData = [];
+        let currentIdx = 0;
+
+        function toggleTheme() {
+            const root = document.documentElement;
+            const isLight = root.getAttribute('data-theme') === 'light';
+            root.setAttribute('data-theme', isLight ? 'dark' : 'light');
+            const btn = document.getElementById('themeBtn');
+            btn.innerHTML = isLight
+                ? '<i data-lucide="sun" style="width:14px;height:14px"></i>'
+                : '<i data-lucide="moon" style="width:14px;height:14px"></i>';
+            lucide.createIcons();
+        }
+
+        window.onload = () => {
+            google.script.run.withSuccessHandler(res => {
+                masterData = res.allCyclesData;
+                currentIdx = res.todayIndex;
+                render(masterData[currentIdx]);
+                document.getElementById('loader').style.display = 'none';
+                lucide.createIcons();
+            }).getInitialData();
+        };
+
+        function changeWeek(s) {
+            const t = currentIdx + s;
+            if (t >= 0 && t < masterData.length) {
+                currentIdx = t;
+                render(masterData[currentIdx]);
+            }
+        }
+
+        function copyToClipboard(text, elementId) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                el.classList.add('copied');
+                const span = el.querySelector('.wise-tag-text');
+                const icon = el.querySelector('.wise-tag-icon');
+                const origText = span.textContent;
+                if (icon) icon.setAttribute('data-lucide', 'check');
+                span.textContent = 'Copied!';
+                lucide.createIcons();
+                setTimeout(() => {
+                    el.classList.remove('copied');
+                    span.textContent = origText;
+                    if (icon) icon.setAttribute('data-lucide', 'copy');
+                    lucide.createIcons();
+                }, 2000);
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function render(data) {
+            document.getElementById('period-display').innerText = data.periodLabel;
+            document.getElementById('period-badge').innerText = data.periodLabel;
+            document.getElementById('h-w1').innerText = data.w1Label;
+            document.getElementById('h-w2').innerText = data.w2Label;
+            document.getElementById('prevBtn').disabled = (currentIdx === 0);
+            document.getElementById('nextBtn').disabled = (currentIdx === masterData.length - 1);
+
+            // Cards
+            const cycleTotal = data.cycleTotal;
+            document.getElementById('card-cycle-total').innerText =
+                '$' + cycleTotal.toLocaleString(undefined, {minimumFractionDigits:2});
+
+            const lifeTotal = masterData.slice(0, currentIdx + 1).reduce((s, c) => s + c.cycleTotal, 0);
+            document.getElementById('card-lifetime').innerText =
+                '$' + lifeTotal.toLocaleString(undefined, {minimumFractionDigits:2});
+
+            const unpaid = data.employees.filter(e => e.status !== 'Paid');
+            const unpaidAmt = unpaid.reduce((s, e) => s + e.biTotal, 0);
+            document.getElementById('card-outstanding').innerText = '$' + unpaidAmt.toFixed(2);
+            document.getElementById('unpaid-count').innerHTML =
+                `<i data-lucide="clock" style="width:10px;height:10px"></i>${unpaid.length} action${unpaid.length !== 1 ? 's' : ''} required`;
+
+            const outCard = document.getElementById('outstanding-card');
+            unpaidAmt > 0
+                ? outCard.classList.add('card-outstanding-active')
+                : outCard.classList.remove('card-outstanding-active');
+
+            const sorted = [...data.employees].sort((a,b) => b.biTotal - a.biTotal);
+            document.getElementById('card-top-earner').innerText = sorted[0].name;
+            document.getElementById('top-earner-amt').innerText = '$' + sorted[0].biTotal.toFixed(2) + ' this cycle';
+
+            const trend = document.getElementById('cycle-trend');
+            if (currentIdx > 0) {
+                const prev = masterData[currentIdx-1].cycleTotal;
+                const diff = ((cycleTotal - prev) / (prev || 1)) * 100;
+                const up = diff > 0;
+                trend.innerHTML = `<span class="trend-chip" style="color:${up ? 'var(--red)' : 'var(--emerald)'}">
+                    <i data-lucide="${up ? 'trending-up' : 'trending-down'}" style="width:11px;height:11px"></i>
+                    ${Math.abs(diff).toFixed(1)}% vs prev cycle
+                </span>`;
+            } else {
+                trend.innerHTML = '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--text-muted)">Start of records</span>';
+            }
+
+            // ── Desktop Table ──
+            let html = '';
+            data.employees.forEach((e, index) => {
+                const s = e.status.replace(/\s+/g, '-');
+                const tagId = `tag-${index}`;
+                const cleanTag = e.wiseTag.replace('@', '');
+                html += `
+                <tr style="animation-delay:${index * 35}ms">
+                    <td>
+                        <div style="display:flex;align-items:center;gap:11px">
+                            <div class="emp-avatar">${e.name.charAt(0)}</div>
+                            <div>
+                                <div class="emp-name">${e.name}</div>
+                                <div class="emp-rate">$${e.rate.toFixed(2)} / unit</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="money">$${e.week1.toFixed(2)}</td>
+                    <td class="money">$${e.week2.toFixed(2)}</td>
+                    <td class="money total">$${e.biTotal.toFixed(2)}</td>
+                    <td>
+                        <div id="${tagId}" class="wise-tag" onclick="copyToClipboard('${cleanTag}','${tagId}')">
+                            <i data-lucide="copy" class="wise-tag-icon" style="width:11px;height:11px"></i>
+                            <span class="wise-tag-text">@${cleanTag}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="status-select-wrap">
+                            <select onchange="statusUpdate('${e.name}', this.value)"
+                                    class="status-select status-${s}">
+                                <option value="Not Paid" ${e.status === 'Not Paid' ? 'selected' : ''}>Not Paid</option>
+                                <option value="Paid"     ${e.status === 'Paid'     ? 'selected' : ''}>Paid</option>
+                                <option value="Hold"     ${e.status === 'Hold'     ? 'selected' : ''}>Hold</option>
+                            </select>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('table-body').innerHTML = html;
+
+            // ── Mobile Cards ──
+            let mobileHtml = '';
+            data.employees.forEach((e, index) => {
+                const s = e.status.replace(/\s+/g, '-');
+                const mTagId = `m-tag-${index}`;
+                const cleanTag = e.wiseTag.replace('@', '');
+                mobileHtml += `
+                <div class="mobile-card" style="animation-delay:${index * 40}ms">
+                    <div class="mobile-card-header">
+                        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                            <div class="emp-avatar">${e.name.charAt(0)}</div>
+                            <div style="min-width:0">
+                                <div class="emp-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${e.name}</div>
+                                <div class="emp-rate">$${e.rate.toFixed(2)} / unit</div>
+                            </div>
+                        </div>
+                        <select onchange="statusUpdate('${e.name}', this.value)"
+                                class="status-select status-${s}" style="flex-shrink:0">
+                            <option value="Not Paid" ${e.status === 'Not Paid' ? 'selected' : ''}>Not Paid</option>
+                            <option value="Paid"     ${e.status === 'Paid'     ? 'selected' : ''}>Paid</option>
+                            <option value="Hold"     ${e.status === 'Hold'     ? 'selected' : ''}>Hold</option>
+                        </select>
+                    </div>
+                    <div class="mobile-weeks">
+                        <div class="mobile-week-cell">
+                            <div class="mobile-week-label">${data.w1Label}</div>
+                            <div class="mobile-week-val">$${e.week1.toFixed(2)}</div>
+                        </div>
+                        <div class="mobile-week-cell">
+                            <div class="mobile-week-label">${data.w2Label}</div>
+                            <div class="mobile-week-val">$${e.week2.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="mobile-total-row">
+                        <span class="mobile-total-label">Total Earned</span>
+                        <span class="mobile-total-val">$${e.biTotal.toFixed(2)}</span>
+                    </div>
+                    <div class="mobile-bottom">
+                        <div id="${mTagId}" class="wise-tag" onclick="copyToClipboard('${cleanTag}','${mTagId}')">
+                            <i data-lucide="copy" class="wise-tag-icon" style="width:11px;height:11px"></i>
+                            <span class="wise-tag-text">@${cleanTag}</span>
+                        </div>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('mobile-list').innerHTML = mobileHtml;
+
+            lucide.createIcons();
+        }
+
+        function statusUpdate(name, status) {
+            masterData[currentIdx].employees.find(e => e.name === name).status = status;
+            render(masterData[currentIdx]);
+            google.script.run.updateStatus(name, masterData[currentIdx].periodLabel, status);
+        }
+    </script>
+</body>
+</html>
+
